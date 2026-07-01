@@ -29,3 +29,16 @@ expediente.
 ## Alternativas descartadas
 
 - **RAG global** sobre todos los pliegos: mayor riesgo de respuestas mezcladas y citas ambiguas.
+
+## Implementación (MVP-4)
+
+- Los fragmentos se cachean en la tabla `tender_chunks` (`tender_id`, `document_id`, `ordinal`,
+  `section`, `content`); se construyen una vez vía doc-service y se reutilizan → no se re-extrae el
+  pliego en cada pregunta.
+- **Recuperación léxica** (solape de términos) filtrada por `tender_id`, y **síntesis con LLM**
+  (`tender-ai-analysis-service` `POST /answer`, cadena OpenRouter free) que redacta la respuesta
+  citando las fuentes como `[n]`. Sin LLM disponible, degrada a modo extractivo (fragmento crudo).
+- Los **embeddings semánticos (pgvector)** quedan aplazados a una fase posterior: OpenRouter free es
+  chat-only y la recuperación léxica por expediente ya mantiene el espacio de búsqueda pequeño.
+- Backend externo opcional `tender-visual-rag` (PixelRAG) si se configura `VISUAL_RAG_URL`; el motor
+  usado (`rag` / `visual-rag` / `extractive`) se devuelve en cada respuesta.
