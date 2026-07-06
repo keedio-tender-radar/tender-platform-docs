@@ -80,6 +80,22 @@ sincronizar la carpeta a almacenamiento externo. La BD es pequeña (~13 MB).
 - **Rotación:** rotar `OPENROUTER_API_KEY`, `TELEGRAM_BOT_TOKEN`, `RUN_TOKEN` y credenciales de BD
   periódicamente (`compute deploy --env-file` para propagar).
 
+## 6.b Proteger la API de lectura (READ_API_TOKEN)
+
+Por defecto la API de lectura está **abierta** (cualquiera con la URL puede leer). Contiene datos
+confidenciales (borradores de oferta, expedientes, decisiones). Para exigir credencial:
+
+1. Elige un secreto y ponlo en el `.compute.env` de **todos** los servicios que hablan con la API:
+   - `tender-api`: `READ_API_TOKEN=<secreto>`
+   - `tender-api` (dashboard): `DASHBOARD_PASSWORD=<contraseña>` — al validarla, `/api/auth/check`
+     devuelve el token y el dashboard lo envía en `X-Api-Token`.
+   - Los servicios internos (bot, análisis, crons) se autentican con el `RUN_TOKEN` ya existente
+     (enviado como `X-Run-Token`). Basta con que `RUN_TOKEN` esté definido en sus envs.
+2. `compute deploy --env-file` de tender-api (y bot/análisis si no tenían `RUN_TOKEN`).
+3. Verifica: `curl …/api/tenders/stats` → **401**; con `-H "X-Run-Token: <run_token>"` → **200**.
+
+Vacío (sin `READ_API_TOKEN`) = comportamiento actual (abierto). No rompe nada hasta activarlo.
+
 ## 7. Troubleshooting
 
 | Síntoma | Causa / Acción |
